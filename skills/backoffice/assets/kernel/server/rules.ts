@@ -133,15 +133,24 @@ export function applyEffects(e: Entity, t: Transition, tenantId: number, row: Ro
  * in-progress records disagree about one linked record, the entity defined later wins.
  */
 export function applySeedEffects(entities: Entity[], tenantId: number) {
-  for (const pass of [false, true])
+  // Finished records first, then records still in progress; within each group the oldest first,
+  // so the most recent event has the last word on a linked record.
+  for (const pass of [false, true]) {
+    const todo: { e: Entity; t: Transition; row: Row; at: string }[] = [];
     for (const e of entities) {
       const st = e.status;
       if (!st || !st.transitions.some((t) => t.then?.length)) continue;
       const live = (s: string) => st.transitions.some((t) => t.from.includes(s));
+      const dated = e.fields.filter((f) => f.type === 'date' || f.type === 'datetime').map((f) => f.name);
       for (const row of all<Row>(`SELECT * FROM ${table(e)} WHERE tenant_id = ? ORDER BY id`, tenantId)) {
         if (live(row[st.field]) !== pass) continue;
         const t = st.transitions.find((x) => x.to === row[st.field] && x.then?.length);
-        if (t) applyEffects(e, t, tenantId, row);
+        const today = new Date().toISOString();
+        const past = dated.map((d) => String(row[d] ?? '')).filter((v) => v && v.slice(0, 10) <= today.slice(0, 10)).sort();
+        if (t) todo.push({ e, t, row, at: past.at(-1) ?? String(row.created_at ?? '') });
       }
     }
+    todo.sort((a, b) => (a.at.slice(0, 10) < b.at.slice(0, 10) ? -1 : a.at.slice(0, 10) > b.at.slice(0, 10) ? 1 : 0));
+    for (const x of todo) applyEffects(x.e, x.t, tenantId, x.row);
+  }
 }

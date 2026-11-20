@@ -41,7 +41,7 @@ if (icons) {
   ok('every icon exists', unknown.length === 0, `not lucide icon names: ${unknown.join(', ')}`);
 }
 
-const port = 20000 + Math.floor(Math.random() * 20000);
+const port = Number(process.env.VERIFY_PORT) || 20000 + Math.floor(Math.random() * 20000);
 const dbFile = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'backoffice-')), 'verify.db');
 const server = spawn('npx', ['tsx', 'server/index.ts'], {
   env: { ...process.env, PORT: String(port), DB_FILE: dbFile, API_ONLY: '1', VERIFY: '1' }, shell: process.platform === 'win32',
@@ -107,6 +107,11 @@ try {
       const hidden = columns(e).filter((f) => f.hideFrom?.includes(role)).map((f) => f.name);
       const leaked = hidden.filter((h) => r.json.rows.some((row) => h in row));
       ok(`${e.name}: hidden fields stay hidden from ${role}`, leaked.length === 0, leaked.join(', '));
+      if (hidden.length && can(role, e, 'update') && r.json.rows[0]) {
+        const w = await call(c, 'PATCH', `/api/e/${e.name}/${r.json.rows[0].id}`, {});
+        const back = w.status === 200 && w.json?.row ? hidden.filter((h) => h in w.json.row) : [];
+        ok(`${e.name}: saving does not reveal hidden fields to ${role}`, back.length === 0, back.join(', '));
+      }
       const csv = await call(c, 'GET', `/api/e/${e.name}/export.csv`);
       ok(`${e.name}: export works for ${role}`, csv.status === 200, `status ${csv.status}`);
     }

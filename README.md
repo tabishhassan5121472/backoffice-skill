@@ -20,6 +20,13 @@ The result of that one sentence, from a 256-line config the agent wrote, with no
 
 ![Fleet board: which car is out, reserved or free over the next two weeks](docs/fleet-board.png)
 
+It is not only car rental. Fresh agents, given one sentence each and nothing but this skill, built
+these as well. The configs and custom screens are in [`examples/`](examples).
+
+| Hotel: room board | School: attendance register | Agency: weekly timesheet |
+|---|---|---|
+| ![Hotel room board](examples/hotel/screen.png) | ![School attendance register](examples/school/screen.png) | ![Agency weekly timesheet](examples/agency/screen.png) |
+
 What you get, running on your machine a few minutes later:
 
 - sign-in, with separate organisations that cannot see each other's data
@@ -76,9 +83,10 @@ skills/backoffice/
   SKILL.md                      the workflow the agent follows
   references/domain-design.md   how to model a business: core record, roles, rules, dashboard
   references/config-reference.md  every option of system.config.ts
-  references/blueprints/        ready designs: gym, clinic
+  references/blueprints/        ready designs: gym, clinic, hotel, school, agency, car rental
   scripts/create.mjs            copies the template into a new project
   assets/kernel/                the app template, including scripts/verify.mjs
+examples/                       four generated systems you can run: car rental, hotel, school, agency
 ```
 
 A taste of the config:

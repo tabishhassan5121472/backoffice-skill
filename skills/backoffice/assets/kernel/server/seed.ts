@@ -69,7 +69,11 @@ function gen(r: R, f: Field, seed: Seed | undefined, c: Ctx, n: number, refIds: 
       const base = c.lookup(s.after.split('.'));
       if (base == null) return null;
       let d = addDays(base, int(r, s.days[0], s.days[1]));
-      if (s.notAfter === 'today' && d.slice(0, 10) > isoDay()) d = String(base).slice(0, 10) > isoDay() ? d : isoDay() + d.slice(10);
+      if (s.notAfter === 'today' && d.slice(0, 10) > isoDay()) {
+        const room = Math.round((Date.parse(isoDay()) - Date.parse(String(base).slice(0, 10))) / 864e5);
+        if (room < 0) return null; // the base date is itself in the future, so nothing has happened yet
+        d = addDays(base, int(r, Math.min(Math.max(s.days[0], 0), room), room));
+      }
       if (f.type !== 'datetime') return d.slice(0, 10);
       const t = new Date(d.length <= 10 ? `${d}T00:00:00` : d);
       if (String(base).length <= 10) t.setHours(int(r, 8, 19), pick(r, [0, 15, 30, 45]), 0, 0);

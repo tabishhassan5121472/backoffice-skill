@@ -31,7 +31,7 @@ Read `references/domain-design.md`, then write a short plan (in your reply, befo
 
 If `references/blueprints/` has a file for this kind of business, start from it and adapt it to what the
 user said. Blueprints are distilled from systems that were built and shipped. Available: `gym.md`,
-`clinic.md`.
+`clinic.md`, `hotel.md`, `school.md`, `agency.md`, `car-rental.md`.
 
 ### 3. Create the project
 ```bash
@@ -75,7 +75,8 @@ board, today's appointments. If it is obvious what that is, build it:
 
 Read `web/pages/Dashboard.tsx` first and match its look, reusing `PageHeader` and `Icon` from
 `web/components/Shell.tsx`, `StatusBadge` and the formatters from `web/format.tsx`, and the `card`, `btn`,
-`th`, `td` and `tnum` classes. Run `npm run verify` again afterwards. Skip this
+`th`, `td` and `tnum` classes. If you look at the result in a shared browser, open your own tab.
+Run `npm run verify` again afterwards. Skip this
 step if no such screen is obvious.
 
 ### 7. Hand over

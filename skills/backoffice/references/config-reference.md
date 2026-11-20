@@ -97,7 +97,7 @@ Other field options:
 | `{ template: 'INV-{seq:4}' }` | `INV-0001`, `INV-0002`, ... (prefer `auto` on the field for codes) |
 | `{ digits: 6 }` | six random digits, as text |
 | `{ after: 'issued', days: [14, 30] }` | a date that many days after another date in the row. The other date may be on a linked record: `'class_id.starts_at'`. Negative days mean before. |
-| `{ after: 'issued', days: [0, 12], notAfter: 'today' }` | the same, but never in the future (payment dates, check-out stamps) |
+| `{ after: 'issued', days: [0, 12], notAfter: 'today' }` | the same, but never in the future (payment dates, check-out stamps): a date that would pass today is drawn again between the base date and today; empty when the base date is itself in the future |
 | `{ ref: { status: 'returned' } }` | for `ref` fields: link only to rows that match (same syntax as a dashboard `where`). "Invoices only for returned bookings." |
 | `{ calc: 'plan_id.price' }` | the result of an expression: a linked record's value, or arithmetic |
 | `{ when: "status == 'paid'", then: {...}, else: {...} }` | one seed or another depending on the row. Without `else` the field stays empty. |
@@ -194,10 +194,13 @@ A step can have a condition, and so can each change:
 The demo data obeys `then` as well: a booking seeded as `on_rent` leaves its vehicle `on_rent`, and
 records still in progress win over finished ones. So give the linked entity's "busy" states
 (`on_rent`, `occupied`) `weight: 0` and let the bookings set them. Finished records are applied first
-across all entities, then the ones in progress; if two in-progress records of different entities
-disagree about one linked record, the entity defined later wins. When finishing a record should only
+across all entities, then the ones in progress; within each group the oldest record goes first (by its
+latest past date), so the most recent event has the last word on a linked record. Only the step that
+leads to a record's current state is applied, not the steps before it. When finishing a record should only
 sometimes change the linked one (a check-out from last month should not leave the room dirty today),
-put a `when` on the change: `when: 'checked_out_at >= addDays(today, -1)'`.
+put a `when` on the change: `when: 'checked_out_at >= addDays(today, -1)'`. A transition's `set` is written
+before its `then` conditions are read, so a condition may use a stamp the same step just set. A date-time
+can be compared with `today`.
 
 Each transition becomes a button on the record page. `roles` limits who may press it (the owner always
 may). The status can only change through a transition, never through the edit form. Every state other
@@ -233,6 +236,7 @@ rules: [
 | `plan_id.price`, `member_id.plan_id.price` | a field of a linked record, through `ref` fields |
 | `days(pickup_on, return_on)` | whole days from the first date to the second |
 | `addDays(issued, 14)` | a date moved by a number of days |
+| `weekday(day)` | 1 for Monday to 7 for Sunday; `check: 'weekday(day) <= 5'` keeps records, and demo data, on working days |
 | `round(x, 2)`, `min(a, b)`, `max(a, b)`, `coalesce(a, b)`, `if(cond, a, b)` | what they say |
 | `a >= b`, `==`, `!=`, `<`, `>`, `and`, `or`, `not` | comparisons, for `check` and `when` |
 | `status == 'paid'` | text goes in single quotes |
@@ -290,8 +294,13 @@ A `list` widget shows the first four fields plus the status (or the fields marke
   (dates as `YYYY-MM-DD`, `today` or `today+7`), `GET /e/<entity>/<id>`,
   `POST /e/<entity>`, `PATCH /e/<entity>/<id>`, `POST /e/<entity>/<id>/transition {to}`,
   `DELETE /e/<entity>/<id>`, `GET /e/<entity>/options`. Rows carry `<field>__label` for every ref.
+  A list answers `{ rows, total, page, pageSize }`, one record `{ row, history }`, a refused rule
+  `{ error, rule: true }` with status 400. Fields hidden from a role are left out of every answer.
+- A custom page gets no props; read the signed-in user with `useSession` from `web/App`. The `btn`,
+  `btn-primary` and `input` classes are in `web/styles.css`.
 
-`npm run verify` calls every custom `GET` route as every role and as a second organisation, so use
+`npm run verify` calls every custom `GET` route with no query parameters, as every role and as a second
+organisation, so give parameters sensible defaults and use
 `can(req.user.role, entity('x')!, 'read')` from `./auth` for anything a role should not see.
 
 ## Good to know
@@ -300,7 +309,19 @@ A `list` widget shows the first four fields plus the status (or the fields marke
 - An unknown `icon` name fails `npm run verify`. Use names from lucide.dev in PascalCase.
 - Select options are shown in title case (`front desk` appears as "Front Desk").
 - Dates are stored and compared in UTC.
-- Changing the config rebuilds the demo data and signs everyone out.
+- Changing the config rebuilds the demo data and signs everyone out. Never put a value derived from the
+  current date or a random number in the config (compute "the last 10 working days" with seeds and
+  rules instead): the config would differ every day and the data would be wiped every day.
+- The demo database is `data/app.db` (SQLite). `npm run verify` uses its own throwaway database and its
+  own port (set `VERIFY_PORT` to choose one), so start the app with `npm run dev` to look at the data.
+  One port serves both the API and the web app; `npm run dev` restarts when a file changes.
+- To test through the API, sign in with `POST /api/auth/login { email, password }`; the demo accounts
+  and their shared password come from `GET /api/auth/demo`.
+- In seeds, `{ ref: {} }` means any row of the linked section, useful as the `else` of a `when`. A seeded
+  ref cannot depend on another field of the same row; check that with a rule instead, and rows that
+  break it are drawn again.
+- Seeds cannot yet add up across rows (hours per person per day) or make one record for every row of
+  another section. Say so to the user if the business needs it.
 
 ## Commands
 `npm run dev` starts it. `npm run verify` checks everything. `npm run reset` wipes the demo data so it is

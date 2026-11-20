@@ -15,7 +15,7 @@ export type Node =
   | { t: 'un'; op: string; a: Node } | { t: 'bin'; op: string; a: Node; b: Node }
   | { t: 'call'; fn: string; args: Node[] };
 
-export const FUNCTIONS = ['days', 'addDays', 'round', 'min', 'max', 'coalesce', 'if'];
+export const FUNCTIONS = ['days', 'addDays', 'round', 'min', 'max', 'coalesce', 'if', 'weekday'];
 const CONSTANTS = new Set(['today', 'now', 'true', 'false', 'null']);
 const cache = new Map<string, Node>();
 
@@ -117,6 +117,7 @@ export function evalExpr(src: string, lookup: (path: string[]) => unknown): any 
         switch (n.fn) {
           case 'days': return Math.round((Date.parse(`${day(a[1])}T00:00:00Z`) - Date.parse(`${day(a[0])}T00:00:00Z`)) / 864e5);
           case 'addDays': return addDays(a[0], Number(a[1]));
+          case 'weekday': return new Date(`${day(a[0])}T00:00:00Z`).getUTCDay() || 7; // 1 = Monday … 7 = Sunday
           case 'round': { const p = 10 ** (a[1] ?? 0); return Math.round(Number(a[0]) * p) / p; }
           case 'min': return a.reduce((x, y) => (y < x ? y : x));
           case 'max': return a.reduce((x, y) => (y > x ? y : x));

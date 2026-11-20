@@ -142,6 +142,11 @@ export function crudRoutes(app: Express) {
     return e;
   };
   const one = (e: Entity, u: User, id: unknown) => get(`SELECT * FROM ${table(e)} WHERE tenant_id = ? AND id = ?`, u.tenant_id, Number(id));
+  /** One record as this user may see it: labels added, hidden fields removed. */
+  const shown = (e: Entity, u: User, id: unknown) => {
+    const row = one(e, u, id);
+    return row && strip(e, u.role, withLabels(e, [row], u.tenant_id))[0];
+  };
   const listOpts = (e: Entity, req: Request): ListOpts => {
     const where: Where = {};
     for (const [k, v] of Object.entries(req.query)) {
@@ -201,7 +206,7 @@ export function crudRoutes(app: Express) {
       `INSERT INTO ${table(e)} (tenant_id, ${keys.map((k) => `"${k}", `).join('')}created_at, updated_at) VALUES (?, ${keys.map(() => '?, ').join('')}?, ?)`,
       req.user.tenant_id, ...keys.map((k) => values[k]), t, t).lastInsertRowid);
     audit(req.user, 'created', e.name, id, String(values[e.title] ?? `#${id}`));
-    res.status(201).json({ row: one(e, req.user, id) });
+    res.status(201).json({ row: shown(e, req.user, id) });
   });
 
   app.patch('/api/e/:entity/:id', (req, res) => {
@@ -222,7 +227,7 @@ export function crudRoutes(app: Express) {
         ...keys.map((k) => values[k]), now(), req.user.tenant_id, row.id);
       audit(req.user, 'updated', e.name, row.id, keys.join(', '));
     }
-    res.json({ row: one(e, req.user, row.id) });
+    res.json({ row: shown(e, req.user, row.id) });
   });
 
   app.post('/api/e/:entity/:id/transition', (req, res) => {
@@ -249,7 +254,7 @@ export function crudRoutes(app: Express) {
     audit(req.user, t.label.toLowerCase(), e.name, row.id, `${cur} → ${to}`);
     for (const d of applyEffects(e, t, req.user.tenant_id, next))
       audit(req.user, 'updated', d.target.name, d.id, `${d.summary} (${t.label.toLowerCase()} on ${String(row[e.title] ?? `#${row.id}`)})`);
-    res.json({ row: one(e, req.user, row.id) });
+    res.json({ row: shown(e, req.user, row.id) });
   });
 
   app.delete('/api/e/:entity/:id', (req, res) => {
