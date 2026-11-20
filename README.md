@@ -10,6 +10,10 @@ system, and proves it works with an automated check before it tells you it is do
 > Build me a system for a small car rental company: vehicles, bookings and damage reports.
 ```
 
+![27-second demo: one sentence in, a working car rental system out](docs/demo.gif)
+
+*The terminal in the clip is recreated; every application screen is a real capture of the generated system.*
+
 The result of that one sentence, from a 256-line config the agent wrote, with no hand-written demo data:
 
 ![Dashboard of the generated car rental system](docs/dashboard.png)
