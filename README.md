@@ -131,6 +131,13 @@ review before it goes live.
 Blueprints are the most useful contribution: a one-page design for a business you know well (see
 `references/blueprints/gym.md`). Bug reports with the `system.config.ts` that triggered them are next.
 
+## Need one built for your business?
+
+The skill gets you a working first version. If you want it taken further, with your own workflows, real
+payments or email, and hosting, I build these for clients:
+[Fiverr](https://www.fiverr.com/tabish_hassan_) · [Contra](https://contra.com/tabishhassan01998_zktf42k3) ·
+[tabishapps.com](https://tabishapps.com).
+
 ## Licence
 
 MIT. Built by [Tabish Hassan](https://tabishapps.com).
